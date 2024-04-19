@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pacers per 100</title>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <style>
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .chart {
+            width: 200px;
+            height: 200px;
+            margin: 10px;
+        }
+        .player-names-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            border: 1px solid lightgray;
+            padding: 10px;
+            width: 275px;
+        }
+        .player-name {
+            cursor: pointer;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .player-name:hover {
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="player-names-container" id="player-names-container"></div>
+<div class="chart-container" id="charts-container"></div>
+
+<script>
+d3.csv("Pacers2024.csv", function(error, players) {
+    if (error) {
+        console.error("Error loading the CSV file:", error);
+        return;
+    }
+
+    var statTypes = ["Points", "Assists", "Rebounds", "3pm", "WinShares"];  
+
+    
+    var namesContainer = d3.select("#player-names-container");
+    players.forEach(function(player) {
+        namesContainer.append("div")
+            .attr("class", "player-name")
+            .text(player.Name)
+            .on("mouseover", function() { updateCharts(player); });
+    });
+
+    function updateCharts(player) {
+        var chartsContainer = d3.select("#charts-container");
+        chartsContainer.selectAll(".chart").remove();  
+
+        statTypes.forEach(function(stat) {
+            var totalStat = "Total" + stat;
+            var value = parseFloat(player[stat]);
+            var total = parseFloat(player[totalStat]);
+
+            const data = [
+                {label: "Stat Data", value: value},
+                {label: "The rest", value: total - value}  
+            ];
+
+            var svg = chartsContainer.append("div")
+                .attr("class", "chart")
+                .append("svg")
+                .attr("width", 200)
+                .attr("height", 220)
+                .append("g")
+                .attr("transform", "translate(100, 120)");
+
+            
+            svg.append("text")
+                .attr("x", 0)
+                .attr("y", -105)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("font-weight", "bold")
+                .text(stat);
+
+	    svg.append("text")
+   		.attr("x", 0)
+   		.attr("y", 100)
+   		.attr("text-anchor", "middle")
+   		.style("font-size", "12px")
+   		.text("Note: Numbers per 100 possessions");
+
+            var arc = d3.svg.arc().outerRadius(90).innerRadius(0);
+            var pie = d3.layout.pie().sort(null).value(function(d) { return d.value; });
+
+            var g = svg.selectAll(".arc")
+                .data(pie(data))
+                .enter().append("g")
+                .attr("class", "arc");
+
+            g.append("path")
+                .attr("d", arc)
+                .style("fill", function(d, i) { return i ? "lightblue" : "gold"; });
+
+           
+            svg.append("text")
+                .attr("text-anchor", "middle")
+                .attr("dy", ".35em")
+                .style("font-size", "14px")
+		.style("fill", "white") 
+                .text(`${Math.round(value / total * 100)}% of Sampled Players' Total`);
+        });
+    }
+});
+</script>
+
+
+
+</body>
